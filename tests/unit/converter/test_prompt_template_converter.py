@@ -105,6 +105,11 @@ def test_identifier_includes_template_hash_and_strip_characters():
     assert "template" not in identifier.params
 
 
+def test_identifier_keeps_hash():
+    converter = PromptTemplateConverter(template="T: {{ prompt }}", strip_characters="'")
+    assert converter.get_identifier().hash == "f7a37b712954fc0dd196ee9481ca7a1e0779841b768171bb6af146a046dde693"
+
+
 def test_identifier_matches_for_equivalent_templates():
     first = PromptTemplateConverter(template="A {{ prompt }}").get_identifier()
     second = PromptTemplateConverter(template="A {{ prompt }}").get_identifier()
@@ -126,8 +131,8 @@ def test_identifier_differs_by_strip_characters():
 def test_long_template_identifier_uses_fixed_size_hash():
     template = f"{'A' * 10_000} {{{{ prompt }}}}"
     identifier = PromptTemplateConverter(template=template).get_identifier()
-    assert len(identifier.params["template_hash"]) == 16
-    assert template not in str(identifier)
+    assert identifier.params["template_hash"] == "a280c02c55a808af"
+    assert template not in identifier.model_dump_json()
 
 
 # Markdown hidden-text recipes from the converters doc: put the prompt on one line,
