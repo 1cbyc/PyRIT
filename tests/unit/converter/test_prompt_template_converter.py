@@ -96,18 +96,38 @@ def test_input_output_types():
     assert converter.output_supported("text") is True
 
 
-def test_identifier_includes_template_and_strip_characters():
+def test_identifier_includes_template_hash_and_strip_characters():
     converter = PromptTemplateConverter(template="T: {{ prompt }}", strip_characters="'")
     identifier = converter.get_identifier()
     assert identifier.class_name == "PromptTemplateConverter"
-    assert identifier.params["template"] == "T: {{ prompt }}"
+    assert identifier.params["template_hash"] == "1d6417505e0571d2"
     assert identifier.params["strip_characters"] == "'"
+    assert "template" not in identifier.params
+
+
+def test_identifier_matches_for_equivalent_templates():
+    first = PromptTemplateConverter(template="A {{ prompt }}").get_identifier()
+    second = PromptTemplateConverter(template="A {{ prompt }}").get_identifier()
+    assert first == second
 
 
 def test_identifier_differs_by_template():
     first = PromptTemplateConverter(template="A {{ prompt }}").get_identifier()
     second = PromptTemplateConverter(template="B {{ prompt }}").get_identifier()
     assert first.hash != second.hash
+
+
+def test_identifier_differs_by_strip_characters():
+    first = PromptTemplateConverter(template="A {{ prompt }}", strip_characters="'").get_identifier()
+    second = PromptTemplateConverter(template="A {{ prompt }}", strip_characters='"').get_identifier()
+    assert first.hash != second.hash
+
+
+def test_long_template_identifier_uses_fixed_size_hash():
+    template = f"{'A' * 10_000} {{{{ prompt }}}}"
+    identifier = PromptTemplateConverter(template=template).get_identifier()
+    assert len(identifier.params["template_hash"]) == 16
+    assert template not in str(identifier)
 
 
 # Markdown hidden-text recipes from the converters doc: put the prompt on one line,
